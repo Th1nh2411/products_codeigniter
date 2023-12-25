@@ -12,9 +12,21 @@ class ProductController extends RestController
 {
     public function __construct()
     {
+        header('Access-Control-Allow-Origin: *');
+        header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+        $method = $_SERVER['REQUEST_METHOD'];
+        if ($method == "OPTIONS") {
+            die("");
+        }
         parent::__construct();
         $this->load->model("ProductModel");
     }
+    public function index_options()
+    {
+        return $this->response(NULL, 200);
+    }
+
     public function getProducts_get()
     {
         // Nhận từ khóa tìm kiếm từ tham số URL
@@ -63,10 +75,10 @@ class ProductController extends RestController
     public function createProduct_post()
     {
         $productModel = new ProductModel;
+        $_POST = json_decode(file_get_contents("php://input"), true);
         $data =
             $this->input->post();
         $result = $productModel->createProduct($data);
-
         if (!$result) {
             $this->response(['status' => false, 'message' => 'Create failed'], 500);
         }

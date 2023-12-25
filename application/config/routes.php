@@ -55,6 +55,9 @@ $route['translate_uri_dashes'] = FALSE;
 
 $route['demo'] = 'api/ApiDemoController/index';
 
+$route['products']['OPTIONS'] = 'api/ProductController/index';
+$route['products/(:num)']['OPTIONS'] = 'api/ProductController/index';
+
 $route['products']['GET'] = 'api/ProductController/getProducts';
 $route['products/(:num)']['GET'] = 'api/ProductController/getProductById/$1';
 $route['products/categories'] = 'api/ProductController/getCategories';

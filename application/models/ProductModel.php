@@ -88,15 +88,14 @@ class ProductModel extends CI_Model
                 'title' => $data['title'],
                 'description' => $data['description'],
                 'price' => $data['price'],
-                'discountPercentage' => isset($data['discountPercentage']) ? $data['discountPercentage'] :  0,
+                'discountPercentage' => isset($data['discountPercentage']) ? $data['discountPercentage'] :  100,
                 'rating' => isset($data['rating']) ? $data['rating'] : 5,
                 'stock' => isset($data['stock']) ? $data['stock'] : 0,
                 'brand' => isset($data['brand']) ? $data['brand'] : 'Hanbiro',
                 'category_id' => $data['category_id'],
-                'thumbnail' => $data['thumbnail']
+                'thumbnail' => isset($data['brand']) ? $data['brand'] : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png'
                 // Các trường dữ liệu khác của sản phẩm
             );
-
             // Thực hiện chèn dữ liệu vào bảng 'products'
             $result = $this->db->insert('products', $productData);
             if ($result === false) {
@@ -146,6 +145,9 @@ class ProductModel extends CI_Model
     }
     public function deleteProduct($id)
     {
+        $this->db->where('product_id', $id);
+        $this->db->delete('product_images');
+
         $this->db->where('id', $id);
         $this->db->delete('products');
 
