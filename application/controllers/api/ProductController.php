@@ -12,13 +12,7 @@ class ProductController extends RestController
 {
     public function __construct()
     {
-        header('Access-Control-Allow-Origin: *');
-        header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
-        header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-        $method = $_SERVER['REQUEST_METHOD'];
-        if ($method == "OPTIONS") {
-            die("");
-        }
+
         parent::__construct();
         $this->load->model("ProductModel");
     }
@@ -32,11 +26,15 @@ class ProductController extends RestController
         // Nhận từ khóa tìm kiếm từ tham số URL
         $keyword = $this->input->get('q');
 
+        // Nhận trang và giới hạn từ tham số URL (mặc định là trang 1 và giới hạn 5 sản phẩm mỗi trang)
+        $page = $this->input->get('page') ?: 1;
+        $limit = $this->input->get('limit') ?: 5;
 
         $productModel = new ProductModel;
-        $data = $productModel->get_products($keyword);
+        $data = $productModel->getProducts($keyword, $page, $limit);
         $this->response($data, 200);
     }
+
     public function getProductById_get($productId)
     {
         $productModel = new ProductModel;
@@ -50,19 +48,18 @@ class ProductController extends RestController
         // Trả về dữ liệu JSON
         $this->response($product, 200);
     }
-    public function getCategories_get()
-    {
-        // Nhận từ khóa tìm kiếm từ tham số URL
 
-
-        $productModel = new ProductModel;
-        $data = $productModel->get_categories();
-        $this->response($data, 200);
-    }
     public function getProductsByCategory_get($categoryId)
     {
+        // Nhận từ khóa tìm kiếm từ tham số URL
+        $keyword = $this->input->get('q');
+
+        // Nhận trang và giới hạn từ tham số URL (mặc định là trang 1 và giới hạn 5 sản phẩm mỗi trang)
+        $page = $this->input->get('page') ?: 1;
+        $limit = $this->input->get('limit') ?: 5;
+
         $productModel = new ProductModel;
-        $product = $productModel->getProductsByCategory($categoryId);
+        $product = $productModel->getProducts($keyword, $page, $limit, $categoryId);
 
         // Kiểm tra nếu sản phẩm không tồn tại, trả về lỗi 404
         if (!$product) {
@@ -75,7 +72,9 @@ class ProductController extends RestController
     public function createProduct_post()
     {
         $productModel = new ProductModel;
-        $_POST = json_decode(file_get_contents("php://input"), true);
+        $_POST = json_decode(file_get_contents(
+            "php://input"
+        ), true);
         $data =
             $this->input->post();
         $result = $productModel->createProduct($data);
@@ -111,6 +110,73 @@ class ProductController extends RestController
         $productModel = new ProductModel;
         $result
             = $productModel->deleteProduct($id);
+
+        if ($result) {
+            // Xóa thành công
+            $this->response(['message' => 'Product deleted successfully'], 200);
+        } else {
+            // Xóa thất bại hoặc không tìm thấy sản phẩm
+            $this->response(['message' => 'Failed to delete product'], 500);
+        }
+    }
+    public function getCategories_get()
+    {
+        // Nhận từ khóa tìm kiếm từ tham số URL
+
+
+        $productModel = new ProductModel;
+        $data = $productModel->get_categories();
+        $this->response($data, 200);
+    }
+    // -------------------------------------------------------------PRODUCT IMAGE HANDLE-----------------------------------------------------------------
+    public function getProductImages_get($id)
+    {
+        // Nhận từ khóa tìm kiếm từ tham số URL
+
+
+        $productModel = new ProductModel;
+        $data = $productModel->getProductImage($id);
+        $this->response($data, 200);
+    }
+    public function createProductImage_post()
+    {
+        $productModel = new ProductModel;
+        $_POST = json_decode(file_get_contents("php://input"), true);
+        $data =
+            $this->input->post();
+        $result = $productModel->createProductImage($data);
+        if (!$result) {
+            $this->response(['status' => false, 'message' => 'Create failed'], 500);
+        }
+
+        $this->response($result, 200);
+    }
+    public function updateProductImage_put($id = null)
+    {
+        $productModel = new ProductModel;
+        // Kiểm tra xem ID có tồn tại không
+        if ($id === null) {
+            $this->response(['message' => 'Invalid product ID'], 400);
+        }
+
+        // Lấy dữ liệu từ request body
+        $data = $this->put();
+        // Validate dữ liệu nếu cần
+
+        // Gọi hàm update trong model để thực hiện cập nhật
+        $result = $productModel->updateProductImage($id, $data);
+
+        if ($result) {
+            $this->response(['message' => 'Product updated successfully'], 200);
+        } else {
+            $this->response(['message' => 'Failed to update product'], 500);
+        }
+    }
+    public function deleteProductImage_delete($id)
+    {
+        $productModel = new ProductModel;
+        $result
+            = $productModel->deleteProductImage($id);
 
         if ($result) {
             // Xóa thành công

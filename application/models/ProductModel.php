@@ -4,21 +4,50 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 class ProductModel extends CI_Model
 {
-    public function get_products($keyword)
+    public function getProducts($keyword, $page = 1, $limit = 5, $categoryId = null)
     {
-        $this->db->select('products.*, GROUP_CONCAT(product_images.image_url) AS image_urls, categories.name AS category');
+        $this->db->select('products.*');
         $this->db->from('products');
         $this->db->join('product_images', 'products.id = product_images.product_id', 'left');
         $this->db->join('categories', 'products.category_id = categories.id', 'left');
-        $this->db->group_by('products.id');
+
+        // Thêm điều kiện lọc theo categoryId
+        if ($categoryId) {
+            $this->db->where('products.category_id', $categoryId);
+        }
 
         // Thêm điều kiện tìm kiếm
-        $this->db->like('products.title', $keyword);
-        $this->db->or_like('products.description', $keyword);
+        if ($keyword) {
+            $this->db->group_start(); // Bắt đầu một nhóm điều kiện OR
+            $this->db->like('products.title', $keyword);
+            $this->db->or_like('products.description', $keyword);
+            $this->db->group_end(); // Kết thúc nhóm điều kiện OR
+        }
+        $this->db->group_by('products.id');
+
+        // Đếm số lượng sản phẩm sau khi được lọc
+        $total_rows = $this->db->count_all_results('', FALSE);
+
+        // Tính toán vị trí bắt đầu của kết quả phân trang
+        $start = ($page - 1) * $limit;
+
+        // Áp dụng phân trang
+        $this->db->limit($limit, $start);
 
         $query = $this->db->get();
-        return $query->result();
+        $result['data'] = $query->result();
+
+        // Tính toán tổng số trang
+        $total_pages = ceil($total_rows / $limit);
+
+        // Thêm thông tin phân trang vào kết quả
+        $result['current_page'] = $page;
+        $result['total_pages'] = $total_pages;
+
+        return $result;
     }
+
+
     public function getProductById($productId)
     {
         // Lấy chi tiết sản phẩm từ bảng products
@@ -31,8 +60,7 @@ class ProductModel extends CI_Model
         }
 
         // Lấy tất cả hình ảnh liên quan đến sản phẩm từ bảng product_images
-        $imagesQuery = $this->db->get_where('product_images', ['product_id' => $productId]);
-        $images = $imagesQuery->result();
+
 
         // Lấy tên category từ id
         $categoryQuery = $this->db->get_where('categories', ['id' => $product->category_id]);
@@ -52,7 +80,7 @@ class ProductModel extends CI_Model
             'brand' => $product->brand,
             'category' => $category->name,
             'thumbnail' => $product->thumbnail,
-            'images' => array_column($images, 'image_url'), // Lấy chỉ định cột 'image_url' từ mảng hình ảnh
+            // Lấy chỉ định cột 'image_url' từ mảng hình ảnh và thêm thumbnail
         ];
 
         // Trả về dữ liệu kết quả
@@ -93,11 +121,20 @@ class ProductModel extends CI_Model
                 'stock' => isset($data['stock']) ? $data['stock'] : 0,
                 'brand' => isset($data['brand']) ? $data['brand'] : 'Hanbiro',
                 'category_id' => $data['category_id'],
-                'thumbnail' => isset($data['brand']) ? $data['brand'] : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png'
+                'thumbnail' => isset($data['thumbnail']) ? $data['thumbnail'] : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png'
                 // Các trường dữ liệu khác của sản phẩm
             );
+
             // Thực hiện chèn dữ liệu vào bảng 'products'
             $result = $this->db->insert('products', $productData);
+            $insertedId = $this->db->insert_id();
+            $imageData = array(
+                'image_url' => isset($data['thumbnail']) ? $data['thumbnail'] : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png',
+                'product_id' => $insertedId,
+            );
+            // Thực hiện chèn dữ liệu vào bảng 'product_image'
+            $this->db->where('product_id', $insertedId);
+            $this->db->insert('product_images', $imageData);
             if ($result === false) {
                 // Nếu có lỗi, throw exception để kích hoạt rollback
                 throw new Exception('Error updating product');
@@ -120,11 +157,20 @@ class ProductModel extends CI_Model
     public function updateProduct($id, $data)
     {
         $this->db->trans_start();
-
+        $productData = array(
+            'title' => $data['title'],
+            'description' => $data['description'],
+            'price' => $data['price'],
+            'discountPercentage' => $data['discountPercentage'],
+            'brand' => $data['brand'],
+            'category_id' => $data['category_id'],
+            'thumbnail' => isset($data['thumbnail']) ? $data['thumbnail'] : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png'
+            // Các trường dữ liệu khác của sản phẩm
+        );
         try {
             // Thực hiện cập nhật
             $this->db->where('id', $id);
-            $result = $this->db->update('products', $data);
+            $result = $this->db->update('products', $productData);
 
             // Kiểm tra kết quả của cập nhật
             if ($result === false) {
@@ -150,6 +196,84 @@ class ProductModel extends CI_Model
 
         $this->db->where('id', $id);
         $this->db->delete('products');
+
+        // Trả về số lượng hàng ảnh hưởng (số lượng sản phẩm đã bị xóa)
+        return $this->db->affected_rows();
+    }
+    // -------------------------------------------------------------PRODUCT IMAGE HANDLE-----------------------------------------------------------------
+    public function getProductImage($id)
+    {
+        $imagesQuery = $this->db->get_where('product_images', ['product_id' => $id]);
+        $images = $imagesQuery->result();
+
+
+        // Trả về số lượng hàng ảnh hưởng (số lượng sản phẩm đã bị xóa)
+        return $images;
+    }
+    public function createProductImage($data)
+    {
+        $this->db->trans_start();
+        try {
+
+            $imageData = array(
+                'image_url' => isset($data['image_url']) ? $data['image_url'] : 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/310px-Placeholder_view_vector.svg.png',
+                'product_id' => $data['product_id'],
+            );
+            // Thực hiện chèn dữ liệu vào bảng 'products'
+            $result = $this->db->insert('product_images', $imageData);
+
+
+            if ($result === false) {
+                // Nếu có lỗi, throw exception để kích hoạt rollback
+                throw new Exception('Error updating product');
+            }
+            // Kiểm tra xem có lỗi không
+            if ($this->db->affected_rows() > 0) {
+                $result = array('status' => true, 'message' => 'Product image created successfully', 'data' => $data);
+            } else {
+                $result = array('status' => false, 'message' => 'Failed to create product');
+            }
+            $this->db->trans_complete();
+
+            return $result;
+        } catch (Exception $e) {
+            // Xử lý exception và thực hiện rollback
+            $this->db->trans_rollback();
+            return false;
+        }
+    }
+    public function updateProductImage(
+        $id,
+        $data
+    ) {
+        $this->db->trans_start();
+
+        try {
+            // Thực hiện cập nhật
+            $this->db->where('id', $id);
+            $result = $this->db->update('product_images', $data);
+
+            // Kiểm tra kết quả của cập nhật
+            if ($result === false) {
+                // Nếu có lỗi, throw exception để kích hoạt rollback
+                throw new Exception('Error updating product images');
+            }
+
+            // Nếu không có lỗi, commit transaction
+            $this->db->trans_complete();
+
+
+            return $result;
+        } catch (Exception $e) {
+            // Xử lý exception và thực hiện rollback
+            $this->db->trans_rollback();
+            return false;
+        }
+    }
+    public function deleteProductImage($id)
+    {
+        $this->db->where('id', $id);
+        $this->db->delete('product_images');
 
         // Trả về số lượng hàng ảnh hưởng (số lượng sản phẩm đã bị xóa)
         return $this->db->affected_rows();
