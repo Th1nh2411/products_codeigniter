@@ -29,9 +29,13 @@ class ProductController extends RestController
         // Nhận trang và giới hạn từ tham số URL (mặc định là trang 1 và giới hạn 5 sản phẩm mỗi trang)
         $page = $this->input->get('page') ?: 1;
         $limit = $this->input->get('limit') ?: 5;
+        // Handle sort query
+        $sort = $this->input->get('sort') ?: 'title';
+        $sortBy = $sort[0] == '-' ?  substr($sort, 1) : $sort;
+        $sortOrder = $sort[0] == '-' ? 'DESC' : 'ASC';
 
         $productModel = new ProductModel;
-        $data = $productModel->getProducts($keyword, $page, $limit);
+        $data = $productModel->getProducts($keyword, $page, $limit, null, $sortBy, $sortOrder);
         $this->response($data, 200);
     }
 
@@ -57,9 +61,13 @@ class ProductController extends RestController
         // Nhận trang và giới hạn từ tham số URL (mặc định là trang 1 và giới hạn 5 sản phẩm mỗi trang)
         $page = $this->input->get('page') ?: 1;
         $limit = $this->input->get('limit') ?: 5;
+        // Handle sort query
+        $sort = $this->input->get('sort') ?: 'title';
+        $sortBy = $sort[0] == '-' ?  substr($sort, 1) : $sort;
+        $sortOrder = $sort[0] == '-' ? 'DESC' : 'ASC';
 
         $productModel = new ProductModel;
-        $product = $productModel->getProducts($keyword, $page, $limit, $categoryId);
+        $product = $productModel->getProducts($keyword, $page, $limit, $categoryId, $sortBy, $sortOrder);
 
         // Kiểm tra nếu sản phẩm không tồn tại, trả về lỗi 404
         if (!$product) {

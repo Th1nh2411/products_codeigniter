@@ -4,9 +4,9 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 class ProductModel extends CI_Model
 {
-    public function getProducts($keyword, $page = 1, $limit = 5, $categoryId = null)
+    public function getProducts($keyword, $page = 1, $limit = 5, $categoryId = null, $sortBy = 'title', $sortOrder = 'asc')
     {
-        $this->db->select('products.*');
+        $this->db->select('products.*, (price - (price * discountPercentage)/100) as calculatedPrice');
         $this->db->from('products');
         $this->db->join('product_images', 'products.id = product_images.product_id', 'left');
         $this->db->join('categories', 'products.category_id = categories.id', 'left');
@@ -24,7 +24,7 @@ class ProductModel extends CI_Model
             $this->db->group_end(); // Kết thúc nhóm điều kiện OR
         }
         $this->db->group_by('products.id');
-
+        $this->db->order_by($sortBy, $sortOrder);
         // Đếm số lượng sản phẩm sau khi được lọc
         $total_rows = $this->db->count_all_results('', FALSE);
 
