@@ -55,11 +55,6 @@ $route['translate_uri_dashes'] = FALSE;
 
 $route['demo'] = 'api/ApiDemoController/index';
 
-// $route['products']['OPTIONS'] = 'api/ProductController/index';
-// $route['products/(:num)']['OPTIONS'] = 'api/ProductController/index';
-// $route['products/image']['OPTIONS'] = 'api/ProductController/index';
-// $route['products/image/(:num)']['OPTIONS'] = 'api/ProductController/index';
-
 $route['products']['GET'] = 'api/ProductController/getProducts';
 $route['products/(:num)']['GET'] = 'api/ProductController/getProductById/$1';
 $route['products']['POST'] = 'api/ProductController/createProduct';
@@ -73,3 +68,6 @@ $route['products/image/(:num)']['GET'] = 'api/ProductController/getProductImages
 $route['products/image']['POST'] = 'api/ProductController/createProductImage';
 $route['products/image/(:num)']['PUT'] = 'api/ProductController/updateProductImage/$1';
 $route['products/image/(:num)']['DELETE'] = 'api/ProductController/deleteProductImage/$1';
+
+$route['login']['POST'] = 'api/UserController/login';
+$route['register']['POST'] = 'api/UserController/register';

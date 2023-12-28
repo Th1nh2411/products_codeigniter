@@ -16,10 +16,7 @@ class ProductController extends RestController
         parent::__construct();
         $this->load->model("ProductModel");
     }
-    public function index_options()
-    {
-        return $this->response(NULL, 200);
-    }
+
 
     public function getProducts_get()
     {
