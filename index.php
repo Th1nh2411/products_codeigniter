@@ -1,5 +1,13 @@
 <?php
-
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: http://localhost:8888');
+header('Access-Control-Allow-Credentials: true');
+header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+$method = $_SERVER['REQUEST_METHOD'];
+if ($method == "OPTIONS") {
+	die();
+}
 /**
  * CodeIgniter
  *
@@ -64,14 +72,7 @@ define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'developm
  * Different environments will require different levels of error reporting.
  * By default development will show errors but testing and live will hide them.
  */
-header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-$method = $_SERVER['REQUEST_METHOD'];
-if ($method == "OPTIONS") {
-	die("");
-}
+
 switch (ENVIRONMENT) {
 	case 'development':
 		error_reporting(-1);

@@ -15,52 +15,69 @@ class UserController extends RestController
 
         parent::__construct();
         $this->load->model("UserModel");
-        // $this->load->library('AuthMiddleware');
+        $this->load->library('Authorization_Token');
     }
     public function login_post()
     {
         $userModel = new UserModel;
-        // $authMiddleware = new AuthMiddleware;
+
+        $_POST = json_decode(file_get_contents(
+            "php://input"
+        ), true);
         $email = $this->input->post('email');
         $password = $this->input->post('password');
-
+        if (!$email) {
+            $this->response(['status' => false, 'message' => 'Registration failed. Missing email'], 404);
+        }
+        if (!$password) {
+            $this->response(['status' => false, 'message' => 'Registration failed. Missing password'], 404);
+        }
         // Gọi hàm đăng nhập từ model
         $user = $userModel->login($email, $password);
 
         // Kiểm tra xem người dùng đã đăng nhập thành công hay không
         if ($user) {
-            // $user_id = $user['id']; // Lấy user_id từ đăng nhập
-            // $expires_at = 3600; // Tính toán thời gian hết hạn của token
-
-            // $token = $authMiddleware->generate_token($user_id, $expires_at);
-
-            // // Lưu thông tin token vào cache
-            // $authMiddleware->cache_token($user_id, $token);
-
+            // HANDLE token
+            $token_data = array('user_id' => $user['user_id'], 'email' => $user['email'], 'role' => $user['role']);
+            $token = $this->authorization_token->generateToken($token_data);
+            $cookie_data = array(
+                'name'   => 'userInfo',
+                'value'  => json_encode(array('user_id' => $user['user_id'], 'email' => $user['email'], 'token' => $token)),
+                'expire' => time() + 360000,
+                'samesite' => 'None',
+                'secure' => true
+            );
+            $this->input->set_cookie($cookie_data);
             $this->response([
                 'result' => true,
-                // 'token' => $token, 
-                'user' => $user,
+                'token' => $token,
                 'message' => 'Login successful.'
             ], 200);
         } else {
-            $this->response(['status' => false, 'message' => 'Login failed. Invalid email or password.'], 500);
+            $this->response(['status' => false, 'message' => 'Invalid email or password.'], 404);
         }
     }
     public function register_post()
     {
         $userModel = new UserModel;
+
+        $_POST = json_decode(file_get_contents(
+            "php://input"
+        ), true);
         $email = $this->input->post('email');
         $phone = $this->input->post('phone');
         $password = $this->input->post('password');
         $role = $this->input->post('role') ?: 'user';
 
-        // Kiểm tra email đã tồn tại hay chưa
-        if (!$email || !$password) {
-            $this->response(['status' => false, 'message' => 'Registration failed. Missing email or password'], 500);
+        if (!$email) {
+            $this->response(['status' => false, 'message' => 'Registration failed. Missing email'], 404);
         }
+        if (!$password) {
+            $this->response(['status' => false, 'message' => 'Registration failed. Missing password'], 404);
+        }
+        // Kiểm tra email đã tồn tại hay chưa
         if ($userModel->checkEmailExist($email)) {
-            $this->response(['status' => false, 'message' => 'Email already exists.'], 500);
+            $this->response(['status' => false, 'message' => 'Email already exists.'], 402);
             return;
         }
 

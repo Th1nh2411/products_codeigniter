@@ -15,6 +15,7 @@ class ProductController extends RestController
 
         parent::__construct();
         $this->load->model("ProductModel");
+        $this->load->library("Authorization_Token");
     }
 
 
@@ -91,6 +92,12 @@ class ProductController extends RestController
     }
     public function updateProduct_put($id = null)
     {
+        $resultValidate = $this->authorization_token->validateToken('admin');
+        // if (!$resultValidate['status']) {
+        //     $this->response($resultValidate, 401);
+        // }
+
+
         $productModel = new ProductModel;
         // Kiểm tra xem ID có tồn tại không
         if ($id === null) {
