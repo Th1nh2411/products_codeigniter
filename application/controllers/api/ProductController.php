@@ -31,9 +31,12 @@ class ProductController extends RestController
         $sort = $this->input->get('sort') ?: 'title';
         $sortBy = $sort[0] == '-' ?  substr($sort, 1) : $sort;
         $sortOrder = $sort[0] == '-' ? 'DESC' : 'ASC';
+        // Handle filter query
+        $discount = $this->input->get('discount');
+        $new = $this->input->get('new');
 
         $productModel = new ProductModel;
-        $data = $productModel->getProducts($keyword, $page, $limit, null, $sortBy, $sortOrder);
+        $data = $productModel->getProducts($keyword, $page, $limit, null, $sortBy, $sortOrder, $discount, $new);
         $this->response($data, 200);
     }
 
@@ -63,17 +66,12 @@ class ProductController extends RestController
         $sort = $this->input->get('sort') ?: 'title';
         $sortBy = $sort[0] == '-' ?  substr($sort, 1) : $sort;
         $sortOrder = $sort[0] == '-' ? 'DESC' : 'ASC';
-
+        // Handle filter query
+        $discount = $this->input->get('discount');
+        $new = $this->input->get('new');
         $productModel = new ProductModel;
-        $product = $productModel->getProducts($keyword, $page, $limit, $categoryId, $sortBy, $sortOrder);
-
-        // Kiểm tra nếu sản phẩm không tồn tại, trả về lỗi 404
-        if (!$product) {
-            $this->response(['status' => false, 'message' => 'Product not found'], 404);
-        }
-
-        // Trả về dữ liệu JSON
-        $this->response($product, 200);
+        $data = $productModel->getProducts($keyword, $page, $limit, $categoryId, $sortBy, $sortOrder, $discount, $new);
+        $this->response($data, 200);
     }
     public function createProduct_post()
     {

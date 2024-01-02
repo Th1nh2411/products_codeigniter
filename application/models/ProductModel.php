@@ -4,9 +4,12 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 class ProductModel extends CI_Model
 {
-    public function getProducts($keyword, $page = 1, $limit = 5, $categoryId = null, $sortBy = 'title', $sortOrder = 'asc')
+    public function getProducts($keyword, $page = 1, $limit = 5, $categoryId = null, $sortBy = 'title', $sortOrder = 'asc', $discount = false, $new = false)
     {
         $this->db->select('products.*, (price - (price * discountPercentage)/100) as calculatedPrice');
+        // Thêm CASE WHEN để tính giá trị cho biến isNew
+        $this->db->select("(CASE WHEN products.created_at >= '" . date('Y-m-d', strtotime('-3 days')) . "' THEN TRUE ELSE FALSE END) as isNew", FALSE);
+
         $this->db->from('products');
         $this->db->join('product_images', 'products.id = product_images.product_id', 'left');
         $this->db->join('categories', 'products.category_id = categories.id', 'left');
@@ -15,7 +18,13 @@ class ProductModel extends CI_Model
         if ($categoryId) {
             $this->db->where('products.category_id', $categoryId);
         }
-
+        // Thêm điều kiện lọc theo categoryId
+        if ($discount) {
+            $this->db->where('products.discountPercentage >', 0);
+        }
+        if ($new) {
+            $this->db->where('products.created_at >=', date('Y-m-d', strtotime('-3 days')));
+        }
         // Thêm điều kiện tìm kiếm
         if ($keyword) {
             $this->db->group_start(); // Bắt đầu một nhóm điều kiện OR
