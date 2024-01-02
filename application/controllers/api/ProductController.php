@@ -77,6 +77,7 @@ class ProductController extends RestController
     }
     public function createProduct_post()
     {
+        $resultValidate = $this->authorization_token->validateToken('admin');
         $productModel = new ProductModel;
         $_POST = json_decode(file_get_contents(
             "php://input"
@@ -119,6 +120,7 @@ class ProductController extends RestController
     }
     public function deleteProduct_delete($id)
     {
+        $resultValidate = $this->authorization_token->validateToken('admin');
         $productModel = new ProductModel;
         $result
             = $productModel->deleteProduct($id);
@@ -152,6 +154,7 @@ class ProductController extends RestController
     }
     public function createProductImage_post()
     {
+        $resultValidate = $this->authorization_token->validateToken('admin');
         $productModel = new ProductModel;
         $_POST = json_decode(file_get_contents("php://input"), true);
         $data =
@@ -165,6 +168,7 @@ class ProductController extends RestController
     }
     public function updateProductImage_put($id = null)
     {
+        $resultValidate = $this->authorization_token->validateToken('admin');
         $productModel = new ProductModel;
         // Kiểm tra xem ID có tồn tại không
         if ($id === null) {
@@ -186,6 +190,7 @@ class ProductController extends RestController
     }
     public function deleteProductImage_delete($id)
     {
+        $resultValidate = $this->authorization_token->validateToken('admin');
         $productModel = new ProductModel;
         $result
             = $productModel->deleteProductImage($id);

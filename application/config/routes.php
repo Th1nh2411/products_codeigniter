@@ -69,5 +69,6 @@ $route['products/image']['POST'] = 'api/ProductController/createProductImage';
 $route['products/image/(:num)']['PUT'] = 'api/ProductController/updateProductImage/$1';
 $route['products/image/(:num)']['DELETE'] = 'api/ProductController/deleteProductImage/$1';
 
+$route['users']['GET'] = 'api/UserController/getUsers';
 $route['login']['POST'] = 'api/UserController/login';
 $route['register']['POST'] = 'api/UserController/register';

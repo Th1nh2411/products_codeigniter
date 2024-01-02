@@ -40,9 +40,17 @@ class UserController extends RestController
             // HANDLE token
             $token_data = array('user_id' => $user['user_id'], 'email' => $user['email'], 'role' => $user['role']);
             $token = $this->authorization_token->generateToken($token_data);
+            $user_data = [
+                'user_id' => $user['user_id'],
+                'email' => $user['email'],
+                'phone' => $user['phone'],
+                'name' => $user['name'],
+                'role' => $user['role'],
+                'token' => $token,
+            ];
             $cookie_data = array(
                 'name'   => 'userInfo',
-                'value'  => json_encode(array('user_id' => $user['user_id'], 'email' => $user['email'], 'token' => $token)),
+                'value'  => json_encode($user_data),
                 'expire' => time() + 360000,
                 'samesite' => 'None',
                 'secure' => true
@@ -65,6 +73,7 @@ class UserController extends RestController
             "php://input"
         ), true);
         $email = $this->input->post('email');
+        $name = $this->input->post('name');
         $phone = $this->input->post('phone');
         $password = $this->input->post('password');
         $role = $this->input->post('role') ?: 'user';
@@ -88,6 +97,7 @@ class UserController extends RestController
         $user_data = [
             'email' => $email,
             'phone' => $phone,
+            'name' => $name,
             'password' => $hashed_password,
             'role' => $role
         ];
@@ -101,8 +111,28 @@ class UserController extends RestController
                 'result' => true, 'user_id' => $user_id,
                 'message' => 'Registration successful.'
             ], 200);
+        } else if ($user_id === -1) {
+            $this->response(['status' => false, 'message' => 'This email is already registered.'], 400);
         } else {
             $this->response(['status' => false, 'message' => 'Registration failed.'], 500);
         }
+    }
+    public function getUsers_get()
+    {
+        // Nhận từ khóa tìm kiếm từ tham số URL
+        $resultValidate = $this->authorization_token->validateToken('admin');
+        $keyword = $this->input->get('q');
+
+        // Nhận trang và giới hạn từ tham số URL (mặc định là trang 1 và giới hạn 5 sản phẩm mỗi trang)
+        $page = $this->input->get('page') ?: 1;
+        $limit = $this->input->get('limit') ?: 5;
+        // Handle sort query
+        $sort = $this->input->get('sort') ?: 'name';
+        $sortBy = $sort[0] == '-' ?  substr($sort, 1) : $sort;
+        $sortOrder = $sort[0] == '-' ? 'DESC' : 'ASC';
+
+        $userModel = new UserModel;
+        $data = $userModel->getUsers($keyword, $page, $limit, $sortBy, $sortOrder);
+        $this->response($data, 200);
     }
 }
